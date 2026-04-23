@@ -5,6 +5,7 @@ const { pushMessage } = require("../services/lineService");
 exports.clockIn = (req, res) => {
   const { student_id, location_in, lineUserId } = req.body;
 
+  //เช็คว่าเข้างานหรือยัง
   const checkOpenLogQuery = `
     SELECT *
     FROM attendance_logs
@@ -38,20 +39,22 @@ exports.clockIn = (req, res) => {
         if (err2) {
           return res.status(500).json({ message: err2.message });
         }
-
+        //ส่งข้อความแจ้งเตือนไปไลน์
         if (lineUserId && lineUserId.startsWith("U")) {
+          const date = clockInTime.toLocaleDateString("th-TH");
+          const time = clockInTime.toLocaleTimeString();
+
           await pushMessage(
             lineUserId,
-            `ลงเวลาเข้างานสำเร็จ\nเวลา: ${clockInTime.toLocaleTimeString()}`
+            `ลงเวลาเข้างานสำเร็จ\nวันที่: ${date}\nเวลา: ${time}`,
           );
         }
-
         return res.json({
           message: "clock in success",
           log_id: logId,
           clock_in: clockInTime,
         });
-      }
+      },
     );
   });
 };
@@ -60,6 +63,7 @@ exports.clockIn = (req, res) => {
 exports.clockOut = (req, res) => {
   const { student_id, location_out, lineUserId } = req.body;
 
+  //หาช่องclock outที่ยังว่าง
   const findOpenLogQuery = `
     SELECT *
     FROM attendance_logs
@@ -99,11 +103,15 @@ exports.clockOut = (req, res) => {
         if (err2) {
           return res.status(500).json({ message: err2.message });
         }
-
+        //ส่งข้อความแจ้งเตือนไปไลน์
         if (lineUserId && lineUserId.startsWith("U")) {
+          await pushMessage;
+          const date = clockInTime.toLocaleDateString("th-TH");
+          const time = clockInTime.toLocaleTimeString();
+
           await pushMessage(
             lineUserId,
-            `ลงเวลาออกงานสำเร็จ\nเวลา: ${clockOutTime.toLocaleTimeString()}\nรวม: ${totalHours} ชั่วโมง`
+            `ลงเวลาเข้างานสำเร็จ\nวันที่: ${date}\nเวลา: ${time}\nรวม: ${totalHours} ชั่วโมง`,
           );
         }
 
@@ -113,12 +121,12 @@ exports.clockOut = (req, res) => {
           clock_out: clockOutTime,
           total_hour: totalHours,
         });
-      }
+      },
     );
   });
 };
 
-// Get History
+// ดูประวัติ
 exports.getHistory = (req, res) => {
   const { student_id } = req.params;
 

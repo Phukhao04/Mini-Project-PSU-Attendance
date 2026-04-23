@@ -12,15 +12,29 @@ export const useLiffInit = (liffId) => {
       try {
         await liff.init({ liffId });
 
+        // ถ้ายังไม่ login ให้ไป login แล้ว reload กลับมา
         if (!liff.isLoggedIn()) {
-          liff.login();
+          liff.login({ redirectUri: window.location.href });
           return;
         }
 
+        // ดึง profile ทุกครั้งให้ชัวร์
         const userProfile = await liff.getProfile();
         setProfile(userProfile);
 
-        const savedStudentId = localStorage.getItem("studentId");
+        const userId = userProfile?.userId;
+
+        if (!userId) {
+          console.log("No LINE userId found");
+          setNeedStudentId(true);
+          return;
+        }
+
+        // 🔥 แก้สำคัญ: แยก key ตาม LINE userId
+        const savedStudentId = localStorage.getItem(
+          `studentId_${userId}`
+        );
+
         if (savedStudentId) {
           setStudentId(savedStudentId);
         } else {
@@ -36,8 +50,13 @@ export const useLiffInit = (liffId) => {
     init();
   }, [liffId]);
 
+  // 🔥 แก้: save แยกตาม LINE userId
   const saveStudentId = (sid) => {
-    localStorage.setItem("studentId", sid);
+    const userId = profile?.userId;
+
+    if (!userId) return;
+
+    localStorage.setItem(`studentId_${userId}`, sid);
     setStudentId(sid);
     setNeedStudentId(false);
   };
