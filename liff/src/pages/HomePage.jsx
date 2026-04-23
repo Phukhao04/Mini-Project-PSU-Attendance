@@ -13,7 +13,7 @@ import { useAttendance } from "../hooks/useAttendance";
 const LIFF_ID = import.meta.env.VITE_LIFF_ID;
 
 function HomePage() {
-  const { loading, profile, studentId, needStudentId, saveStudentId } =
+  const { loading, profile, userId, studentId, needStudentId, saveStudentId } =
     useLiffInit(LIFF_ID);
 
   const [studentIdInput, setStudentIdInput] = useState("");
@@ -34,13 +34,13 @@ function HomePage() {
     handleClockIn,
     handleClockOut,
     handleSubmitReport,
-  } = useAttendance(studentId);
+  } = useAttendance(userId);
 
   useEffect(() => {
-    if (studentId) {
+    if (userId) {
       fetchHistory();
     }
-  }, [studentId]);
+  }, [userId, fetchHistory]);
 
   const handleSaveStudentId = () => {
     if (!studentIdInput.trim()) return;

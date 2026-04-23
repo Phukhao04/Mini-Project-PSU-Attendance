@@ -4,6 +4,6 @@ const attendanceController = require("../controllers/attendanceController");
 
 router.post("/clock-in", attendanceController.clockIn);
 router.post("/clock-out", attendanceController.clockOut);
-router.get("/history/:student_id", attendanceController.getHistory);
+router.get("/history/:lineUserId", attendanceController.getHistory);
 
 module.exports = router;

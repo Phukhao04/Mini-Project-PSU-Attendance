@@ -7,7 +7,7 @@ import {
 } from "../services/api";
 import { getCurrentLocation } from "../utils/location";
 
-export const useAttendance = (studentId) => {
+export const useAttendance = (lineUserId) => {
   const [status, setStatus] = useState("ยังไม่เข้างาน");
   const [clockInTime, setClockInTime] = useState("-");
   const [clockOutTime, setClockOutTime] = useState("-");
@@ -19,17 +19,39 @@ export const useAttendance = (studentId) => {
   const [locationError, setLocationError] = useState("");
   const [showReport, setShowReport] = useState(false);
 
+  const restoreCurrentStatus = (logs) => {
+    if (!logs || logs.length === 0) return;
+
+    const latest = logs[0]; // history เรียง DESC อยู่แล้ว
+
+    if (!latest.clock_out) {
+      setStatus("กำลังทำงาน");
+      setClockInTime(
+        new Date(latest.clock_in).toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+      setClockOutTime("-");
+      setTotalHours("-");
+      setLogId(latest.log_id);
+      setMessage("คุณกำลังเข้างานอยู่");
+      setShowReport(false);
+    }
+  };
+
   const fetchHistory = async () => {
-    if (!studentId) return;
+    if (!lineUserId) return;
     try {
-      const data = await getHistory(studentId);
-      setHistory(data.history || []);
+      const data = await getHistory(lineUserId);
+      const logs = data.history || [];
+      setHistory(logs);
+      restoreCurrentStatus(logs);
     } catch (err) {
       console.log("fetch history error:", err);
     }
   };
 
-  // ✅ CLOCK IN
   const handleClockIn = async () => {
     try {
       setMessage("กำลังขอ GPS...");
@@ -38,7 +60,7 @@ export const useAttendance = (studentId) => {
       setLocation(coords);
 
       const data = await clockInApi(
-        studentId,
+        lineUserId,
         `${coords.latitude},${coords.longitude}`
       );
 
@@ -63,7 +85,6 @@ export const useAttendance = (studentId) => {
     }
   };
 
-  // ✅ CLOCK OUT
   const handleClockOut = async () => {
     try {
       setMessage("กำลังขอ GPS...");
@@ -72,7 +93,7 @@ export const useAttendance = (studentId) => {
       setLocation(coords);
 
       const data = await clockOutApi(
-        studentId,
+        lineUserId,
         `${coords.latitude},${coords.longitude}`
       );
 
@@ -96,7 +117,6 @@ export const useAttendance = (studentId) => {
     }
   };
 
-  // ✅ SUBMIT REPORT
   const handleSubmitReport = async (detail) => {
     if (!detail.trim()) {
       setMessage("กรุณากรอกรายละเอียดงาน");
@@ -105,7 +125,6 @@ export const useAttendance = (studentId) => {
 
     try {
       await submitReportApi(logId, detail);
-
       setMessage("ส่งรายงานสำเร็จ");
       setShowReport(false);
     } catch (err) {

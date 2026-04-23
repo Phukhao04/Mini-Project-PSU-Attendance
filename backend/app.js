@@ -4,12 +4,14 @@ const path = require("path");
 const lineRoutes = require("./routes/lineroutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
-app.use("/api/line", lineRoutes);
 app.use(express.json());
 
+app.use("/api/line", lineRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/work-reports", reportRoutes);
 

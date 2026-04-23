@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import liff from "@line/liff";
+import { bindStudentIdApi, getMeApi, syncUserApi } from "../services/api";
 
 export const useLiffInit = (liffId) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [userId, setUserId] = useState("");
   const [studentId, setStudentId] = useState("");
   const [needStudentId, setNeedStudentId] = useState(false);
 
@@ -12,31 +14,25 @@ export const useLiffInit = (liffId) => {
       try {
         await liff.init({ liffId });
 
-        // ถ้ายังไม่ login ให้ไป login แล้ว reload กลับมา
         if (!liff.isLoggedIn()) {
           liff.login({ redirectUri: window.location.href });
           return;
         }
 
-        // ดึง profile ทุกครั้งให้ชัวร์
         const userProfile = await liff.getProfile();
         setProfile(userProfile);
+        setUserId(userProfile.userId);
 
-        const userId = userProfile?.userId;
+        await syncUserApi({
+          lineUserId: userProfile.userId,
+          displayName: userProfile.displayName,
+        });
 
-        if (!userId) {
-          console.log("No LINE userId found");
-          setNeedStudentId(true);
-          return;
-        }
+        const me = await getMeApi(userProfile.userId);
 
-        // 🔥 แก้สำคัญ: แยก key ตาม LINE userId
-        const savedStudentId = localStorage.getItem(
-          `studentId_${userId}`
-        );
-
-        if (savedStudentId) {
-          setStudentId(savedStudentId);
+        if (me?.user?.student_id) {
+          setStudentId(me.user.student_id);
+          setNeedStudentId(false);
         } else {
           setNeedStudentId(true);
         }
@@ -50,13 +46,14 @@ export const useLiffInit = (liffId) => {
     init();
   }, [liffId]);
 
-  // 🔥 แก้: save แยกตาม LINE userId
-  const saveStudentId = (sid) => {
-    const userId = profile?.userId;
-
+  const saveStudentId = async (sid) => {
     if (!userId) return;
 
-    localStorage.setItem(`studentId_${userId}`, sid);
+    await bindStudentIdApi({
+      lineUserId: userId,
+      studentId: sid,
+    });
+
     setStudentId(sid);
     setNeedStudentId(false);
   };
@@ -64,6 +61,7 @@ export const useLiffInit = (liffId) => {
   return {
     loading,
     profile,
+    userId,
     studentId,
     needStudentId,
     saveStudentId,
